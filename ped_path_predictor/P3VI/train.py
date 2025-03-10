@@ -213,6 +213,23 @@ class P3VIWrapper:
         fde_loss /= len(dataloader) * batch_size
         return eval_loss, fde_loss
 
+    def get_single_prediction(self, x):
+        x_traj = x[:,0:2]
+        x_cf = x[:,2:]
+        i_t = x_traj[n_obs - 1, :]
+        #x_traj = np.array(x_traj, dtype=np.float32)
+        #x_traj = x_traj.reshape((observed_frame_num,1,2))
+        #x_traj = torch.from_numpy(x_traj).cuda()
+        x_traj = torch.tensor(x_traj, dtype=torch.float32).reshape((n_obs,1,2)).cuda()
+        x_cf = torch.tensor(x_cf, dtype=torch.float32).reshape((n_obs,1,2)).cuda()
+        with torch.no_grad():
+            path = self.model.forward(x_traj, x_cf)
+        path = path.cpu().squeeze().numpy()
+        i_t = np.expand_dims(i_t, axis=0)
+        i_t = np.repeat(i_t, n_pred, axis=0)
+        path = path + i_t
+        return path
+
 
 if __name__ == '__main__':
 

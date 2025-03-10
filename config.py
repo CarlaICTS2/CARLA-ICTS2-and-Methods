@@ -474,7 +474,7 @@ class Config:
     ped_speed_range = [1.8, 2.2]
     ped_distance_range = [25, 30]
     # car_speed_range = [6, 9]
-    scenarios = ['01_int','02_int','03_int', '04_int', '05_int', '06_int', '01_non_int','02_non_int','03_non_int']#,'02_non_int','03_non_int']#,'02_non_int']#,"02_int", "03_int"  #, '02', '03', '04', '05', '06', '07', '08', '09']
+    scenarios = ["01_int", "02_int", "03_int", "04_int", "05_int", "06_int", "01_non_int", "02_non_int", "03_non_int", "04_non_int", "05_non_int", "06_non_int"]#,'02_non_int','03_non_int']#,'02_non_int']#,"02_int", "03_int"  #, '02', '03', '04', '05', '06', '07', '08', '09']
     #scenarios = ['01_int','02_int','03_int']
     #scenarios = ['01','02', '03', '04', '05', '06', '07', '08', '09']
     val_scenarios = ['06'],# '02', '03', '04', '05', '06', '07', '08', '09']
@@ -493,7 +493,7 @@ class Config:
     batch_size = 2  # 32  # How many experience traces to use for each training step.
     update_freq = 4  # How often to perform a training step after each episode.
     load_model = True  # Whether to load a saved model.
-    path = "_out/sac/"  # The path to save our model to.
+    # path = "_out/sac/"  # The path to save our model to.
     total_training_steps = 1000001
     automatic_entropy_tuning = False
     target_update_interval = 1
@@ -530,7 +530,7 @@ class Config:
     filter = 'vehicle.audi.tt'
     rolename = 'hero'
     gama = 1.7
-    despot_port = 1245
+    # despot_port = 1255
     N_DISCRETE_ACTIONS = 3
     max_speed = 30 * 0.27778  # in m/s was 50 in dikshants experiments
     max_speed_kmh = 30

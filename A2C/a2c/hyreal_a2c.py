@@ -1,8 +1,10 @@
 import subprocess
+from collections import deque
 from multiprocessing import Process
 import carla
 import numpy as np
-from P3VI.train import P3VIWrapper
+# from P3VI.train import P3VIWrapper
+from ped_path_predictor.P3VI.train import P3VIWrapper
 
 from config import Config
 from benchmark.rlagent import RLAgent
@@ -25,7 +27,7 @@ class HyREALA2C(RLAgent):
             self.conn.establish_connection()
             m = self.conn.receive_message()
             print(m)  # RESET
-        self.ped_pred = P3VIWrapper("./_out/weights/new_200_256_all_seed_0_p3vi_best_15_20.pth", 60, 80)
+        self.ped_pred = P3VIWrapper(path="./ped_path_predictor/saved_models/60_80/ci3p.pth")
 
 
     def get_reward(self, action):

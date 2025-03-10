@@ -59,7 +59,7 @@ class EvalSacdAgent(BaseAgent):
         self.current_episode = current_episode
 
     def evaluate(self):
-
+        self.env.test_episodes = list(self.env.test_episodes)
         num_episodes = len(self.env.test_episodes)
         print(self.env.mode, num_episodes)
         episodes = 0
@@ -206,5 +206,5 @@ class EvalSacdAgent(BaseAgent):
     def save_models(self, save_dir):
         pass
 
-    def __del__(self):
-        self.file.close()
+    # def __del__(self):
+    #     self.file.close()

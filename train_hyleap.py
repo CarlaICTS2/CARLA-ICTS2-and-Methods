@@ -207,9 +207,9 @@ if __name__ == '__main__':
         Config.test_scenarios = [args.test]
     #Config.scenarios = ["01_int"]
     print(Config.scenarios)
-    p = Process(target=run_server)
-    p.start()
-    time.sleep(20)  # wait for the server to start
+    # p = Process(target=run_server)
+    # p.start()
+    # time.sleep(20)  # wait for the server to start
 
     main(args)
     os.kill(os.getppid(), signal.SIGHUP)

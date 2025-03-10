@@ -1,7 +1,10 @@
 
 import sys
 
-sys.path.append("your path to a2c code")
+
+
+sys.path.append("/workspace/data/CARLA-ICTS")
+from A2C.a2c.hyreal_a2c_AUTOBOTS import HyREALA2C_AUTOBOTS
 import os
 import yaml
 import argparse
@@ -31,9 +34,10 @@ def run(args):
         agent = A2CCadrl(env.world, env.map, env.scene,conn=None)
         env.reset_agent(agent)
     else:
-        path = "./models/model_3000.pth"
+        path = "./_out/HyRealSaves/Normal/hyreal_tui_1000_ms1_all_int-seed0-20240918-1809_ec0.005_lr5e-05_vc1.0/model/model_3000.pth"
         # path = None
-        agent = HyREALA2C(env.world, env.map, env.scene,conn=None)
+        # agent = HyREALA2C(env.world, env.map, env.scene,conn=None)
+        agent = HyREALA2C_AUTOBOTS(env.world, env.map, env.scene,conn=None)
         env.reset_agent(agent)
 
     # Specify the directory to log.
@@ -55,18 +59,16 @@ def run(args):
 
 def run_server():
     # train environment
-    port = "-carla-port={}".format(Config.port)
-    if not Config.server:
-        carla_p = "your path to carla"
-        p = subprocess.run(['cd '+carla_p+' && ./CarlaUE4.sh your arguments' + port], shell=True)
-        #cmd = 'cd '+carla_p+' && ./CarlaUE4.sh -quality-level=Low -RenderOffScreen -carla-server -benchmark -fps=50' + port
-        #pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
-        #                   shell=True, preexec_fn=os.setsid)
-    else:
-        carla_p = "your path to carla"
-        command = "unset SDL_VIDEODRIVER && ./CarlaUE4.sh  -quality-level="+ Config.qw  +" your arguments" + port # -quality-level=Low 
-        p = subprocess.run(['cd '+carla_p+' && ' + command ], shell=True)
-        
+    # port = "-carla-port={}".format(Config.port)
+    # carla_p = "/home/carla"
+    # if not Config.server:
+    #     p = subprocess.run(['cd '+carla_p+' && ./CarlaUE4.sh -RenderOffScreen -carla-server -benchmark -fps=50' + port], shell=True)
+    #     #cmd = 'cd '+carla_p+' && ./CarlaUE4.sh -quality-level=Low -RenderOffScreen -carla-server -benchmark -fps=50' + port
+    #     #pro = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+    #     #                   shell=True, preexec_fn=os.setsid)
+    # else:
+    # command = "./CarlaUE4.sh -RenderOffscreen" # -quality-level=Low
+    p = subprocess.run([f"/home/carla/CarlaUE4.sh -RenderOffscreen -carla-port={Config.port}"], shell=True)
     return p
 
 
@@ -94,7 +96,8 @@ if __name__ == '__main__':
     if args.test:
         if args.test == "all":
             # TODO PAGI: ADD SCENARIO HERE
-            Config.scenarios = ['01_int','02_int','03_int', '04_int', '05_int', '01_non_int','02_non_int','03_non_int']
+            Config.scenarios = ['01_int', '02_int', '03_int', '04_int', '05_int', '06_int',
+                                '01_non_int', '02_non_int', '03_non_int', '04_non_int', '05_non_int', '06_non_int']
         else:
             Config.scenarios = [args.test]
     print(args.test)

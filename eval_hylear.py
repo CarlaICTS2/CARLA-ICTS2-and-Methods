@@ -14,7 +14,7 @@ from multiprocessing import Process
 
 from SAC.sac_discrete import EvalSacdAgent
 from benchmark.environment import GIDASBenchmark
-from utils.connector import Connector
+from utils.connector import DespotBridge
 from hylear.hylear_controller import HyLEAR
 from config import Config
 
@@ -24,9 +24,9 @@ def run(args):
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
     # Create environments.
-    env = GIDASBenchmark(port=Config.port)
+    env = GIDASBenchmark(port=Config.port, mode="TESTING")
     env.eval(current_episode=args.episode)
-    conn = Connector(Config.despot_port)
+    conn = DespotBridge()
     eval_mode = True
     agent = HyLEAR(env.world, env.map, env.scene, conn, eval_mode)
     env.reset_agent(agent)
@@ -42,7 +42,7 @@ def run(args):
     # Create the agent.
     agent = EvalSacdAgent(
         env=env, test_env=env, log_dir=log_dir, cuda=args.cuda, current_episode=args.episode,
-        seed=args.seed, agent=args.agent, **config)
+        seed=args.seed, agent=args.agent, path= "./_out/hyLear_plain/hylear-seed0-20241106-2334_ter0.6_lr0.005_bs128_start25000/model/1250/")
     agent.evaluate()
 
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     parser.add_argument('--agent', type=str, default='hylear')
     parser.add_argument('--cuda', action='store_true')
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--port', type=int, default=2200)
+    parser.add_argument('--port', type=int, default=2000)
     parser.add_argument('--episode', type=int, default=0)
     parser.add_argument('--test', type=str, default='')
     args = parser.parse_args()
@@ -70,6 +70,7 @@ if __name__ == '__main__':
     print('Env. port: {}'.format(Config.port))
     if args.test:
         Config.test_scenarios = [args.test]
+    Config.test_scenarios = "01_int"
 
     p = Process(target=run_server)
     p.start()

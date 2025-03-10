@@ -16,8 +16,8 @@ from benchmark.risk.risk_aware_path import PathPlanner
 
 
 def run_server():
-    subprocess.run(['cd your path to isdespot && ./car {}'.format(
-        Config.despot_port)], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    subprocess.run([f'./agents/planner/isdespot/build/carla_car/is_despot_carla_car --port {Config.despot_port} --scenario=blah  --start_timestamp=1234'],
+                   shell=True)
 
 
 class HyLEAR(RLAgent):
@@ -31,10 +31,14 @@ class HyLEAR(RLAgent):
             p = Process(target=run_server)
             p.start()
             self.conn.establish_connection()
-            m = self.conn.receive_message()
-            print(m)  # RESET
-        #self.ped_pred = PathPredictor("ped_path_predictor/_out/m2p3_289271.pth")
-        #self.ped_pred.model.eval()
+            # m = self.conn.receive_exact_message()
+            # print(m)  # RESET
+
+        self.ped_pred = PathPredictor("ped_path_predictor/saved_models/15_20/m3p.pth")
+        self.ped_pred.model.eval()
+        self.observed_frame_num = 15
+        self.predicting_frame_num = 20
+
         self.risk_path_planner = PathPlanner()
 
         self.risk_cmp = np.zeros((110, 310))
@@ -82,8 +86,17 @@ class HyLEAR(RLAgent):
         elif not self.pedestrian_observable:
             control.throttle = 0.6
         else:
-            self.conn.send_message(terminal, reward, angle, car_pos, car_speed, pedestrian_positions, path)
-            m = self.conn.receive_message()
+            reward = float(reward)
+            self.conn.send_observation(terminal,
+                                       reward,
+                                       car_pos,
+                                       car_speed,
+                                       angle,
+                                       path,
+                                        self.pedestrian_observable,
+                                       pedestrian_positions[-1],
+                                       )
+            m = self.conn.receive_despot_simulation_result()
             if m == "START":
                 self.conn.send_message(terminal, reward, angle, car_pos, car_speed, pedestrian_positions, path)
                 m = self.conn.receive_message()
@@ -113,7 +126,8 @@ class HyLEAR(RLAgent):
         #    (path, risk), intention = self.get_path_simple(start, end, obstacles)
         # print("time taken: ", time.time() - t)
         path = self.find_path(start, end, self.grid_cost, obstacles)
-        intention = self.get_car_intention(obstacles, path, start)
+        _, intention = self.get_path_with_reasoning(start, end, obstacles)
+        # intention = self.get_car_intention(obstacles, path, start)
         control = carla.VehicleControl()
         control.brake = 0.0
         control.hand_brake = False
@@ -145,7 +159,7 @@ class HyLEAR(RLAgent):
             relaxed_sidewalk[13:16, y - sidewalk_length: y + sidewalk_length] = sidewalk_cost
             relaxed_sidewalk[4:7, y - 10: sidewalk_length + sidewalk_length] = sidewalk_cost
             # TODO PAGI: ADD SCENARIO HERE
-        elif self.scenario[0] in [2, 5, 6, 9, "01_int", "02_int", "03_int", "04_int", "05_int", "01_non_int", "02_non_int", "03_non_int"]:
+        elif self.scenario[0] in [2, 5, 6, 9, "01_int", "02_int", "03_int", "04_int", "05_int", "06_int", "01_non_int", "02_non_int", "03_non_int", "04_non_int", "05_non_int", "06_non_int"]:
             relaxed_sidewalk[94:97, y - sidewalk_length: y + sidewalk_length] = sidewalk_cost
             relaxed_sidewalk[103:106, y - sidewalk_length: y + sidewalk_length] = sidewalk_cost
         elif self.scenario[0] == 11:
@@ -194,6 +208,10 @@ class HyLEAR(RLAgent):
             # Use path predictor
             ped_updated_risk_cmp = self.risk_cmp.copy()
             ped_path = np.array(self.ped_history)
+
+            # slice cognitive information:
+            ped_path = ped_path[:, 0:2]
+
             ped_path = ped_path.reshape((15, 2))
             pedestrian_path = self.ped_pred.get_single_prediction(ped_path)
             new_obs = [obs for obs in obstacles]
@@ -203,7 +221,7 @@ class HyLEAR(RLAgent):
                     new_obs.append((round(node[0]), round(node[1])))
                     pedestrian_path_d.append((round(node[0]), round(node[1])))
             for pos in new_obs:
-                ped_updated_risk_cmp[pos[0] + 10, pos[1] + 10] = 10000
+                ped_updated_risk_cmp[pos[0], pos[1]] = 10000
 
             path_normal = self.risk_path_planner.find_path_with_risk(start, end, self.grid_cost, obstacles, car_speed,
                                                                      yaw, ped_updated_risk_cmp, True, self.scenario[0])
@@ -249,7 +267,7 @@ class HyLEAR(RLAgent):
         return path, risk
 
     def get_reward(self, action):
-        print("HyLear")
+        # print("HyLear")
         reward = 0
         goal = False
         terminal = False

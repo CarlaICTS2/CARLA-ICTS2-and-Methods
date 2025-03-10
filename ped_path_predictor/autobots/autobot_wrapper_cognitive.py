@@ -74,13 +74,13 @@ class AutoBotWrapperCog:
 
         if path is not None:
             self.model.load_state_dict(torch.load(path))
-
-        self.train_loader, self.test_loader, self.val_loader = getDataloaders(path_int, path_non_int, path_int_car,
-                                                                              path_non_int_car, n_obs, n_pred,
-                                                                              batch_size=batch_size)
-
-        self.logger.info(f"Train-Batches {len(self.train_loader)}")
-        self.logger.info(f"Test-Batches {len(self.test_loader)}")
+        #
+        # self.train_loader, self.test_loader, self.val_loader = getDataloaders(path_int, path_non_int, path_int_car,
+        #                                                                       path_non_int_car, n_obs, n_pred,
+        #                                                                       batch_size=batch_size)
+        #
+        # self.logger.info(f"Train-Batches {len(self.train_loader)}")
+        # self.logger.info(f"Test-Batches {len(self.test_loader)}")
 
     def transform(self, x, y):
         ego_in = x[:, :, :2]
@@ -99,6 +99,36 @@ class AutoBotWrapperCog:
                                torch.concatenate((cf_as_agent, ex_mask), dim=-1).unsqueeze(-2)), dim=-2).cuda()
 
         return ego_in, agents_in, map_lanes, ego_out
+
+    def get_single_prediction(self, x, vehicle_past):
+        # x_traj = x[:,0:2]
+        # x_cf = x[:,2:]
+
+        ego_in = x[ :, :2]
+        agent_in = vehicle_past
+
+        cf_as_agent = x[ :, 2:4]
+
+        ego_in = torch.tensor(ego_in).float()
+        agent_in = torch.tensor(agent_in).float()
+        cf_as_agent = torch.tensor(cf_as_agent).float()
+
+        map_lanes = torch.zeros((batch_size, 1, 1)).cuda()
+
+
+        ex_mask = torch.ones((ego_in.shape[0], ego_in.shape[1])).float()
+        ego_in = torch.concatenate((ego_in, ex_mask), dim=-1).cuda()
+        agents_in = torch.cat((torch.concatenate((agent_in, ex_mask), dim=-1).unsqueeze(-2),
+                               torch.concatenate((cf_as_agent, ex_mask), dim=-1).unsqueeze(-2)), dim=-2).cuda()
+
+        ego_in = ego_in.unsqueeze(0)
+        agents_in = agents_in.unsqueeze(0)
+        map_lanes = map_lanes.unsqueeze(0)
+
+        with torch.no_grad():
+            pred_obs, mode_probs = self.model(ego_in, agents_in, map_lanes)
+        path = pred_obs.cpu().squeeze().numpy()
+        return path
 
     def _compute_ego_errors(self, ego_preds, ego_gt, ego_in=None):
         with torch.no_grad():
@@ -194,7 +224,7 @@ if __name__ == '__main__':
     if "--test" in sys.argv:
 
 
-        abw_eval = AutoBotWrapperCog(path='./_out/AutoBotWrapperCog/obs15_pred20/2024-07-11_20-42-44/model_114.pth')
+        abw_eval = AutoBotWrapperCog(path='./ped_path_predictor/saved_models/60_80/autobots_cognitive.pth')
 
         dl = singleDatasets(("./ped_path_predictor/data/new_car/01_int_cleaned.npy", "./ped_path_predictor/data/new_car/01_int_cleaned_car.npy"), n_obs, n_pred, 512)
         int_1_a, int_1_f = abw_eval.eval(dl)

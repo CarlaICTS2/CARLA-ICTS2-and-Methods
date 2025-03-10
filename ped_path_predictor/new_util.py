@@ -120,9 +120,9 @@ def getDataloadersDynGroup(path_int, path_non_int, path_int_car, path_non_int_ca
                                                                                  0.5 * len(test_dataset))],
                                                               generator=torch.Generator().manual_seed(42))
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=True)
 
     return train_dataloader, test_dataloader, val_dataloader
 
@@ -219,8 +219,8 @@ class SingleIctsDatasetDynGroup(Dataset):
 
 def singleDatasets(path_tuple, n_obs, n_pred, batch_size=64):
     dataset = SingleIctsDataset(path_tuple[0], path_tuple[1], n_obs, n_pred)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=True)
 
 def singleDatasetsDynGroup(path_tuple, n_obs, n_pred, batch_size=64):
     dataset = SingleIctsDatasetDynGroup(path_tuple[0], path_tuple[1], n_obs, n_pred)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=True)

@@ -94,8 +94,9 @@ class BaseAgent(ABC):
             print(self.eval_interval)
             self.train_episode()
             if self.episodes % self.eval_interval == 0 and self.steps > 120000:
-                self.env.mode = "VALIDATION"
-                self.evaluate()
+                self.save_models(os.path.join(self.model_dir, str(self.episodes)))
+                # self.env.mode = "VALIDATION"
+                # self.evaluate()
                 self.env.mode = "TRAINING"
 
             if self.steps > self.num_steps:

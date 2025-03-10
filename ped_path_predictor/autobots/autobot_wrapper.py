@@ -25,8 +25,8 @@ path_int_car = "./ped_path_predictor/data/new_car/all_int_car.npy"
 path_non_int_car = "./ped_path_predictor/data/new_car/all_non_int_car.npy"
 
 
-n_obs = 60
-n_pred = 80
+n_obs = 15
+n_pred = 20
 batch_size = 512
 lr = 0.001
 
@@ -218,6 +218,34 @@ class AutoBotWrapperNew:
         fde_loss /= len(dataloader) * batch_size
         return eval_loss, fde_loss
 
+    def get_single_prediction(self, x, vehicle_past):
+        # x_traj = x[:,0:2]
+        # x_cf = x[:,2:]
+
+        ego_in = x[ :, :2]
+        agent_in = vehicle_past
+
+        ego_in = torch.tensor(ego_in).float()
+        agent_in = torch.tensor(agent_in).float()
+
+        map_lanes = torch.zeros((batch_size, 1, 1)).cuda()
+
+
+
+
+        ex_mask = torch.ones((ego_in.shape[0], ego_in.shape[1])).float()
+        ego_in = torch.concatenate((ego_in, ex_mask), dim=-1).unsqueeze(0).cuda()
+        agents_in = torch.concatenate((agent_in, ex_mask), dim=-1).unsqueeze(-2).cuda()
+
+        # ego_in = ego_in.unsqueeze(0)
+        # agents_in = agents_in.unsqueeze(0)
+        # map_lanes = map_lanes.unsqueeze(0)
+
+        with torch.no_grad():
+            print(ego_in.shape, agents_in.shape, map_lanes.shape)
+            pred_obs, mode_probs = self.model(ego_in, agents_in, map_lanes)
+        path = pred_obs.cpu().squeeze().numpy()
+        return path
 
 if __name__ == '__main__':
     if "--test" in sys.argv:

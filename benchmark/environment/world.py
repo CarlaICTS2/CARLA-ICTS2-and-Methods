@@ -14,6 +14,7 @@ from benchmark.environment.utils import find_weather_presets
 from benchmark.environment.sensors import *
 import carla
 import timeit
+from utils.utils import find_weather_presets, l2_distance, build_projection_matrix, get_image_point, point_in_canvas
 
 
 class World(object):
@@ -77,6 +78,62 @@ class World(object):
         self.random = False
         self.dummy_car = False
         self.debug = False
+
+    def set_parked_vehicle_transforms_across_all_scenarios(self, parked_car_transforms: list):
+        self.all_parked_vehicle_transforms = parked_car_transforms
+
+
+    def render_rgb_camera_with_bounding_boxes(self) -> np.ndarray:
+        rgb_camera_image = self.rgb_camera_image_queue.get()
+        # reshape the raw data into an RGB array
+        rgb_camera_image = np.reshape(
+            np.copy(rgb_camera_image.raw_data), (rgb_camera_image.height, rgb_camera_image.width, 4)
+        )
+
+        # get the world to camera matrix
+        world_2_camera = np.array(self.rgb_camera.get_transform().get_inverse_matrix())
+
+        # get all actors (ego and exo vehicles and walkers)
+        for actor_snapshot in self.server_world.get_snapshot():
+            actor = self.server_world.get_actor(actor_snapshot.id)
+            if actor is not None:
+                # for all vehicles and walkers
+                if "vehicle" in actor.type_id or "walker" in actor.type_id:
+                    # get bounding box vertices based on current actor location
+                    vertices = [v for v in actor.bounding_box.get_world_vertices(actor.get_transform())]
+                    # connect vertices by drawing all connecting lines as defined in self.edges (fixed order)
+                    for edge in self.edges:
+
+                        ray0 = vertices[edge[0]] - self.rgb_camera.get_transform().location
+                        ray0 = np.array((ray0.x, ray0.y, ray0.z))
+                        ray1 = vertices[edge[1]] - self.rgb_camera.get_transform().location
+                        ray1 = np.array((ray1.x, ray1.y, ray1.z))
+
+                        cam_forward_vec = self.rgb_camera.get_transform().get_forward_vector()
+                        cam_forward_vec = np.array((cam_forward_vec.x, cam_forward_vec.y, cam_forward_vec.z))
+
+                        # project CARLA world coordinates to camera coordinates
+                        if cam_forward_vec.dot(ray0) > 0:
+                            p1 = get_image_point(vertices[edge[0]], self.projection_matrix, world_2_camera)
+                        # vertex is behind the camera
+                        else:
+                            p1 = get_image_point(vertices[edge[0]], self.projection_matrix_behind, world_2_camera)
+
+                        if cam_forward_vec.dot(ray1) > 0:
+                            p2 = get_image_point(vertices[edge[1]], self.projection_matrix, world_2_camera)
+                        else:
+                            p2 = get_image_point(vertices[edge[1]], self.projection_matrix_behind, world_2_camera)
+
+                        # sanity check: are the retrieved points inside the relevant canvas?
+                        p1_in_canvas = point_in_canvas(p1, Config.Carla.HEIGHT, Config.Carla.WIDTH)
+                        p2_in_canvas = point_in_canvas(p2, Config.Carla.HEIGHT, Config.Carla.WIDTH)
+
+                        # if not: skip edge
+                        if not p1_in_canvas and not p2_in_canvas:
+                            continue
+                        cv2.line(rgb_camera_image, (int(p1[0]),int(p1[1])), (int(p2[0]),int(p2[1])), (255,0,0, 255), 1)
+
+        return rgb_camera_image
 
     def get_car_blueprint(self):
         blueprint = random.choice(self.world.get_blueprint_library().filter(self._actor_filter))

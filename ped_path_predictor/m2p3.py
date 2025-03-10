@@ -27,7 +27,7 @@ batch_size = 512
 train_samples = 1
 test_samples = 1
 epochs = 250
-latent_dim = 24
+latent_dim = 15
 
 
 class PathPredictor:

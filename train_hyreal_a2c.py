@@ -1,8 +1,14 @@
 import sys
 
 from A2C.a2c.a2ccadrl import A2CCadrl
+
+
 from A2C.a2c.hyreal_a2c import HyREALA2C
-from utils.connector import Connector 
+from A2C.a2c.hyreal_a2c_AUTOBOTS import HyREALA2C_AUTOBOTS
+
+
+
+from utils.connector import Connector
 sys.path.append("/E/CARLA-ICTS")
 import os
 import yaml
@@ -30,7 +36,14 @@ def run(args):
     env = GIDASBenchmark(port=Config.port)
     env.world.camera = False
     conn = Connector(Config.despot_port)
+
+
     agent = HyREALA2C(env.world, env.map, env.scene,conn=None)
+
+
+
+
+
     env.reset_agent(agent)
     #if Config.server:
     #    test_env = GIDASBenchmark(port=Config.port + 100, mode="VALIDATION")
@@ -103,7 +116,7 @@ if __name__ == '__main__':
 
     # p = Process(target=run_server)
     # p.start()
-    t.sleep(20)
+    # t.sleep(20)
     #if Config.server:
     #    p2 = Process(target=run_test_server)
     #    p2.start()

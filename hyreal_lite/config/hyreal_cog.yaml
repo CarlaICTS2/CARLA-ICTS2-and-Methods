@@ -1,0 +1,19 @@
+name: "hyreal_cog"
+num_steps: 10000000
+batch_size: 256
+lr: 0.00005
+memory_size: 150000
+gamma: 0.99
+multi_step: 1
+target_entropy_ratio: 0.5
+start_steps: 25000
+update_interval: 10
+target_update_interval: 1000
+use_per: True
+dueling_net: True
+num_eval_steps: 300000
+max_episode_steps: 500
+log_interval: 1
+eval_interval: 5000 # units: epsisodes
+save_interval: 100000
+max_grad_norm: 5

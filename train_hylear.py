@@ -1,3 +1,10 @@
+import signal
+import sys
+
+from agents.hybrid.hylear_refactored import HyLEAR_NavA2C
+from utils.logger import initialize_logging
+
+sys.path.append("/workspace/data/CARLA-ICTS")
 import os
 import yaml
 import argparse
@@ -10,21 +17,26 @@ from multiprocessing import Process
 from SAC.sac_discrete import SacdAgent
 from hylear.hylear_agent import SharedSacdAgent
 from benchmark.environment import GIDASBenchmark
-from utils.connector import Connector
+from utils.connector import DespotBridge
 from hylear.hylear_controller import HyLEAR
 from config import Config
 
 
 def run(args):
+
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.SafeLoader)
     config['num_steps'] = 3e6
+    initialize_logging()
 
     # Create environments.
     env = GIDASBenchmark(port=Config.port)
-    conn = Connector(Config.despot_port)
+    conn = DespotBridge()
     eval_mode = False
     agent = HyLEAR(env.world, env.map, env.scene, conn, eval_mode)
+    # agent = HyLEAR_NavA2C(env.client, env.world, env.map, env.scene)
+
+
     env.reset_agent(agent)
     #test_env = GIDASBenchmark(port=Config.port + 100, setting="special")
 
@@ -37,6 +49,8 @@ def run(args):
     time = datetime.now().strftime("%Y%m%d-%H%M")
     log_dir = os.path.join(
         '_out', args.env_id, f'{name}-seed{args.seed}-{time}')
+    log_dir= os.path.join(
+        '_out', "hyLear_plain", f'{name}-seed{args.seed}-{time}')
 
     # Create the agent.
     Agent = SharedSacdAgent
@@ -47,19 +61,11 @@ def run(args):
 
 
 def run_server():
-    # train environment
-    port = "-carla-port={}".format(Config.port)
-    if not Config.server:
-        carla_p = "your path to carla"
-        p = subprocess.run(['cd '+carla_p+' && ./CarlaUE4.sh your arguments' + port], shell=True)
-        #cmd = 'cd '+carla_p+' && ./CarlaUE4.sh -quality-level=Low -RenderOffScreen -carla-server -benchmark -fps=50' + port
-        #pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
-        #                   shell=True, preexec_fn=os.setsid)
-    else:
-        carla_p = "your path to carla"
-        command = "unset SDL_VIDEODRIVER && ./CarlaUE4.sh  -quality-level="+ Config.qw  +" your arguments" + port # -quality-level=Low 
-        p = subprocess.run(['cd '+carla_p+' && ' + command ], shell=True)
-        
+    p = subprocess.run(["/home/carla/CarlaUE4.sh -RenderOffscreen"], shell=True)
+    return p
+
+def run_despot_server():
+    p = subprocess.run(["./hyleap/smart-car-sim-master/is-despot/problems/hybridVisual_car/car "], shell=True)
     return p
 
 
@@ -84,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--agent', type=str, default='isdespot')
     parser.add_argument('--server', action='store_true')
     parser.add_argument("--qw", type=str, default="Low")
-    parser.add_argument('--despot_port', type=int, default=1255)
+    parser.add_argument('--despot_port', type=int, default=1245)
     args = parser.parse_args()
     Config.server = args.server
     args.config = os.path.join('SAC/sac_discrete/config', args.config+".yaml")
@@ -96,9 +102,15 @@ if __name__ == '__main__':
     p = Process(target=run_server)
     p.start()
     time.sleep(20)
+
+    # d = Process(target=run_despot_server)
+    # d.start()
+
     #if Config.server:
     #    p2 = Process(target=run_test_server)
     #    p2.start()
     #    t.sleep(20)
+
     
     run(args)
+    os.kill(os.getppid(), signal.SIGHUP)

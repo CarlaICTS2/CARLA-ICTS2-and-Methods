@@ -40,7 +40,7 @@ class RLAgent(Agent):
         self.folder = datetime.datetime.now().timestamp()
         self.ped_history = deque(list(), maxlen=self.observed_frame_num)
         self.past_trajectory = list()
-        self.pedestrian_observable = False
+        self.pedestrian_observable = True
         # os.mkdir("_out/{}".format(self.folder))
         self.c = 0
 
@@ -675,18 +675,19 @@ class RLAgent(Agent):
             walker_flag = True
         if np.sqrt((start[0] - walker_x) ** 2 + (start[1] - walker_y) ** 2) <= 120.0 and walker_flag:
             self.ped_history.append([walker_x, walker_y, self.world.walker.icr.value, self.world.walker.son.value])
-            if self.scenario[0] == 3 and walker_x >= self.world.incoming_car.get_location().x:
+            if self.scenario[0] in [3, "04_non_int"] and walker_x >= self.world.incoming_car.get_location().x:
                 obstacles.append((int(walker_x), int(walker_y)))
                 self.pedestrian_observable = True
-            elif self.scenario[0] in [7, 8] and walker_x <= self.world.incoming_car.get_location().x:
+                # TODO ADD CARS TO OBSTACLES
+            elif self.scenario[0] in [7, 8, "05_non_int", "06_non_int"] and walker_x <= self.world.incoming_car.get_location().x:
                 obstacles.append((int(walker_x), int(walker_y)))
                 self.pedestrian_observable = True
-            elif self.scenario[0] in [1, 2, 4, 5, 6, 9, 10,"01_int", "02_int", "03_int", "04_int", "05_int", "01_non_int", "02_non_int", "03_non_int"]:
+            elif self.scenario[0] in [1, 2, 4, 5, 6, 9, 10,"01_int", "02_int", "03_int", "04_int", "05_int", "06_int", "01_non_int", "02_non_int", "03_non_int", "04_non_int", "05_non_int", "06_non_int"]:
                 obstacles.append((int(walker_x), int(walker_y)))
                 self.pedestrian_observable = True
         if not walker_flag:
             self.pedestrian_observable = False
-        if self.scenario[0] in [3, 7, 8, 10]:
+        if self.scenario[0] in [3, 7, 8, 10, "04_non_int", "05_non_int", "06_non_int"]:
             car_x, car_y = self.world.incoming_car.get_location().x, self.world.incoming_car.get_location().y
             if np.sqrt((start[0] - car_x) ** 2 + (start[1] - car_y) ** 2) <= 50.0:
                 buffer = 0
